@@ -1176,7 +1176,9 @@ fail:
 	     return  -ENODEV;	
 	}
       printk("[egalax_serial]: egalax_disable +\n");
+#ifdef CONFIG_HAS_EARLYSUSPEND
 	egalax_serial_early_suspend(NULL);
+#endif
       printk("[egalax_serial]: egalax_disable -\n");
 
 	return egalax_suspend_result;
@@ -1190,7 +1192,9 @@ EXPORT_SYMBOL(egalax_disable);
 	}
 
 	printk("[egalax_serial]: egalax_enable+\n");
+#ifdef CONFIG_HAS_EARLYSUSPEND
 	egalax_serial_early_resume(NULL);
+#endif
 	printk("[egalax_serial]: egalax_enable-\n");
 	return 0;
 }

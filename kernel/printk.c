@@ -157,7 +157,9 @@ static int saved_console_loglevel = -1;
 char *auto_dump_log_buf_ptr = __log_buf;
 
 #define IRAM_KERNEL_LOG_BUFFER	0x40020000
+#ifdef CONFIG_HAS_EARLYSUSPEND
 extern int suspend_process_going;
+#endif
 static void __iomem *iram_log_addr=NULL;
 #define IRAM_LOG_BUF(idx) ( ((unsigned char*)iram_log_addr)[(idx) & LOG_BUF_MASK] )
 
@@ -603,8 +605,10 @@ static void call_console_drivers(unsigned start, unsigned end)
 static void emit_log_char(char c)
 {
 	LOG_BUF(log_end) = c;
+#ifdef CONFIG_HAS_EARLYSUSPEND
 	if(suspend_process_going)
 	 IRAM_LOG_BUF(log_end) = c;
+#endif
 	log_end++;
 	if (log_end - log_start > log_buf_len)
 		log_start = log_end - log_buf_len;
@@ -764,7 +768,9 @@ static inline void printk_delay(void)
 		}
 	}
 }
-extern int  suspend_process_going;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+extern int suspend_process_going;
+#endif
 asmlinkage int vprintk(const char *fmt, va_list args)
 {
 	int printed_len = 0;

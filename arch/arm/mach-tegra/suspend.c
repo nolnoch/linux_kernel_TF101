@@ -605,8 +605,10 @@ static void tegra_debug_uart_resume(void)
 unsigned long wake_status=0;
 unsigned long temp_wake_status=0;
 unsigned long sd_wake_status=0;
+#ifdef CONFIG_HAS_EARLYSUSPEND
 extern struct timer_list suspend_timer;
 extern void suspend_worker_timeout(unsigned long data);
+#endif
 extern void watchdog_enable(int sec);
 extern void watchdog_disable(void);
 extern void auto_dump_kernel_log(void);
@@ -638,8 +640,10 @@ static int tegra_suspend_enter(suspend_state_t state)
 
         if(lp_state==0){
 		watchdog_disable();
+		#ifdef CONFIG_HAS_EARLYSUSPEND
 		del_timer_sync(&suspend_timer);
 		destroy_timer_on_stack(&suspend_timer);
+		#endif
         }
 	pr_info("Entering suspend state LP%d\n", lp_state);
 	if (do_lp0) {
@@ -715,10 +719,12 @@ static int tegra_suspend_enter(suspend_state_t state)
 	local_fiq_enable();
 	local_irq_restore(flags);
         if(lp_state==0){
+		#ifdef CONFIG_HAS_EARLYSUSPEND
 		init_timer_on_stack(&suspend_timer);
 		suspend_timer.expires = jiffies + HZ * 8;
 		suspend_timer.function = suspend_worker_timeout;
 		add_timer(&suspend_timer);
+		#endif
 		watchdog_enable(10);
                 auto_dump_kernel_log();
      }

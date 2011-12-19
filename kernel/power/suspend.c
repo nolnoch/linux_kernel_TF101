@@ -67,7 +67,9 @@ static void disable_nonboot_cpus_timeout(unsigned long data)
 	BUG();
 }
 int suspend_enter_flag=0;
+#ifdef CONFIG_HAS_EARLYSUSPEND
 extern struct timer_list suspend_timer;
+#endif
 extern  void suspend_worker_timeout(unsigned long data);
 
 extern const char *const pm_states[PM_SUSPEND_MAX] = {
@@ -148,6 +150,7 @@ static int suspend_prepare(void)
 	if (error)
 		goto Finish;
 	watchdog_disable();
+	#ifdef CONFIG_HAS_EARLYSUSPEND
 	del_timer_sync(&suspend_timer);
 	destroy_timer_on_stack(&suspend_timer);
 	init_timer_on_stack(&suspend_timer);
@@ -163,6 +166,7 @@ static int suspend_prepare(void)
 	suspend_timer.expires = jiffies + HZ * 9;
 	suspend_timer.function = suspend_worker_timeout;
 	add_timer(&suspend_timer);
+	#endif
 	watchdog_enable(11);
 	if (!error)
 		return 0;
