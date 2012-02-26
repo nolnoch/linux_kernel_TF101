@@ -168,8 +168,6 @@ static int __devinit tegra_das_probe(struct platform_device *pdev)
 {
 	struct resource *res, *region;
 	int ret = 0;
-	
-	printk("DEBUG: tegra_das_probe\n");
 
 	if (das)
 		return -ENODEV;
@@ -218,15 +216,12 @@ static int __devinit tegra_das_probe(struct platform_device *pdev)
 	}
 
 	tegra_das_debug_add(das);
-	
-	printk("DEBUG: [das_probe] Das setup complete\n");
 
 	platform_set_drvdata(pdev, das);
 
 	return 0;
 
 err:
-	printk("DEBUG: [das_probe] Das setup failed\n");
 	das = NULL;
 	return ret;
 }
@@ -263,7 +258,6 @@ static struct platform_device *tegra_das_device;
 static int __init das_init(void)
 {
 	int ret = 0;
-	printk("DEBUG: [tegra] das_init\n");
 
 	ret = platform_driver_register(&tegra_das_driver);
 	

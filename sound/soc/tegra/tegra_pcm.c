@@ -375,7 +375,6 @@ static struct snd_soc_platform_driver tegra_pcm_platform = {
 
 static int __devinit tegra_pcm_platform_probe(struct platform_device *pdev)
 {
-	printk("DEBUG: tegra_pcm_platform_probe\n");
 	return snd_soc_register_platform(&pdev->dev, &tegra_pcm_platform);
 }
 
@@ -397,7 +396,6 @@ static struct platform_driver tegra_pcm_driver = {
 static int __init pcm_init(void)
 {
 	int ret;
-	printk("DEBUG: [tegra] pcm_init\n");
 
 	ret = platform_driver_register(&tegra_pcm_driver);
 

@@ -161,14 +161,17 @@ static int tegra_wm8903_event_int_spk(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_dapm_context *dapm = w->dapm;
 	struct snd_soc_card *card = dapm->card;
-	struct tegra_wm8903 *machine = snd_soc_card_get_drvdata(card);
-	struct tegra_wm8903_platform_data *pdata = &machine->pdata;
+	struct snd_soc_codec *codec = snd_soc_card_get_drvdata(card);
 
-	if (!(machine->gpio_requested & GPIO_SPKR_EN))
-		return 0;
+	/* DAPM toggles speaker power registers 0x10 and 0x11, but ALSA
+	 * doesn't seem to get the Ventana-required GPIO value correct.
+	 * So we set it here:
+	 */
 
-	gpio_set_value_cansleep(pdata->gpio_spkr_en,
-				SND_SOC_DAPM_EVENT_ON(event));
+	if (SND_SOC_DAPM_EVENT_ON(event))
+	  snd_soc_write(codec, WM8903_GPIO_CONTROL_3, 0x0033); /*Speaker GPIO Enable*/
+	else if (SND_SOC_DAPM_EVENT_OFF(event))
+	  snd_soc_write(codec, WM8903_GPIO_CONTROL_3, 0x0000); /*Speaker GPIO Disable*/
 
 	return 0;
 }
@@ -262,20 +265,15 @@ static int tegra_wm8903_init(struct snd_soc_pcm_runtime *rtd)
 		return -EINVAL;
 	}
 
-	printk("DEBUG: Testing GPIO_SPKR_EN\n");
 	if (gpio_is_valid(pdata->gpio_spkr_en)) {
 		ret = gpio_request(pdata->gpio_spkr_en, "spkr_en");
 		if (ret) {
-			printk("DEBUG: Cannot get GPIO\n");
 			dev_err(card->dev, "cannot get spkr_en gpio\n");
 			return ret;
 		}
 		machine->gpio_requested |= GPIO_SPKR_EN;
-		printk("DEBUG: GPIO_SPKR_EN bitwise addition successful.\n");
 
 		gpio_direction_output(pdata->gpio_spkr_en, 0);
-	} else {
-		printk("DEBUG: GPIO invalid\n");
 	}
 
 	if (gpio_is_valid(pdata->gpio_hp_mute)) {
@@ -368,20 +366,15 @@ static __devinit int tegra_wm8903_driver_probe(struct platform_device *pdev)
 	struct snd_soc_card *card = &snd_soc_tegra_wm8903;
 	struct tegra_wm8903 *machine;
 	int ret;
-	
-	printk("DEBUG: tegra_wm8903_driver_probe\n");
 
 	if (!pdev->dev.platform_data) {
-		printk("DEBUG: [tegra_probe] Error - No platform data supplied\n");
-		//return -EINVAL;
+		return -EINVAL;
 	}
 	
 	machine = devm_kzalloc(&pdev->dev, sizeof(struct tegra_wm8903),
 			       GFP_KERNEL);
-	if (!machine) {
-		printk("DEBUG: [wm8903_probe] Can't allocate tegra_wm8903 struct\n");
+	if (!machine)
 		return -ENOMEM;
-	}
 
 	card->dev = &pdev->dev;
 	platform_set_drvdata(pdev, card);
@@ -397,25 +390,20 @@ static __devinit int tegra_wm8903_driver_probe(struct platform_device *pdev)
 	}
 
 	if (machine_is_ventana()) {
-		printk("DEBUG: [tegra_probe] DAPM is Ventana\n");
 		card->dapm_routes = ventana_audio_map;
 		card->num_dapm_routes = ARRAY_SIZE(ventana_audio_map);
 	} else if (machine_is_harmony()) {
-		printk("DEBUG: [tegra_probe] DAPM is Harmony\n");
 		card->dapm_routes = harmony_audio_map;
 		card->num_dapm_routes = ARRAY_SIZE(harmony_audio_map);
-	} else {
-		printk("DEBUG: [tegra_probe] Error - No DAPM\n");
 	}
 
 	ret = tegra_asoc_utils_init(&machine->util_data, &pdev->dev);
 	if (ret)
 		goto err_unregister;
 
-	printk("DEBUG: [tegra_wm8903_driver_probe] registering card\n");
 	ret = snd_soc_register_card(card);
 	if (ret) {
-		printk("DEBUG: [tegra_probe] snd_soc_register_card failed (%d)\n",
+		printk(KERN_ERR "Register card failed (%d)\n",
 			ret);
 		goto err_fini_utils;
 	}
@@ -479,8 +467,6 @@ static struct platform_driver tegra_wm8903_driver = {
 static int __init tegra_init(void)
 {
 	int ret;
-
-	printk("DEBUG: [tegra_init]\n");
 
 	ret = platform_driver_register(&tegra_wm8903_driver);
 

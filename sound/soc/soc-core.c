@@ -750,12 +750,10 @@ static int soc_bind_dai_link(struct snd_soc_card *card, int num)
 	struct snd_soc_platform *platform;
 	struct snd_soc_dai *codec_dai, *cpu_dai;
 	const char *platform_name;
-	
-	printk("DEBUG: soc_bind_dai_link called on %s\n", card->name);
 
 	if (rtd->complete)
 		return 1;
-	printk("binding %s at idx %d\n", dai_link->name, num);
+	dev_dbg(card->dev, "binding %s at idx %d\n", dai_link->name, num);
 
 	/* do we already have the CPU DAI for this link ? */
 	if (rtd->cpu_dai) {
@@ -774,7 +772,7 @@ static int soc_bind_dai_link(struct snd_soc_card *card, int num)
 		rtd->cpu_dai = cpu_dai;
 		goto find_codec;
 	}
-	printk("CPU DAI %s not registered\n",
+	printk(KERN_ERR "CPU DAI %s not registered\n",
 			dai_link->cpu_dai_name);
 
 find_codec:
@@ -823,10 +821,8 @@ find_platform:
 
 	/* if there's no platform we match on the empty platform */
 	platform_name = dai_link->platform_name;
-	if (!platform_name && !dai_link->platform_of_node) {
-		printk("DEBUG: [soc_bind_dai_link] find_platform def-to dummy\n");
+	if (!platform_name && !dai_link->platform_of_node)
 		platform_name = "snd-soc-dummy";
-	}
 
 	/* no, then find one from the set of registered platforms */
 	list_for_each_entry(platform, &platform_list, list) {
@@ -843,13 +839,12 @@ find_platform:
 		goto out;
 	}
 
-	printk("platform %s not registered\n",
+	printk(KERN_ERR "platform %s not registered\n",
 			dai_link->platform_name);
 	return 0;
 
 out:
 	/* mark rtd as complete if we found all 4 of our client devices */
-	printk("DEBUG: [soc_bind_dai_link] rtd complete, resume instantiate_card\n");
 	if (rtd->codec && rtd->codec_dai && rtd->platform && rtd->cpu_dai) {
 		rtd->complete = 1;
 		card->num_rtd++;
@@ -976,8 +971,6 @@ static int soc_probe_codec(struct snd_soc_card *card,
 {
 	int ret = 0;
 	const struct snd_soc_codec_driver *driver = codec->driver;
-	
-	printk("DEBUG: soc_probe_codec\n");
 
 	codec->card = card;
 	codec->dapm.card = card;
@@ -1030,9 +1023,6 @@ static int soc_probe_platform(struct snd_soc_card *card,
 {
 	int ret = 0;
 	const struct snd_soc_platform_driver *driver = platform->driver;
-	
-	printk("DEBUG: soc_probe_platform called on card %s, platform %s\n",
-	       card->name, platform->name);
 
 	platform->card = card;
 	platform->dapm.card = card;
@@ -1044,7 +1034,6 @@ static int soc_probe_platform(struct snd_soc_card *card,
 		snd_soc_dapm_new_controls(&platform->dapm,
 			driver->dapm_widgets, driver->num_dapm_widgets);
 
-	printk("DEBUG: [soc_probe_platform] probing driver\n");
 	if (driver->probe) {
 		ret = driver->probe(platform);
 		if (ret < 0) {
@@ -1164,9 +1153,7 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num, int order)
 	struct snd_soc_dai *codec_dai = rtd->codec_dai, *cpu_dai = rtd->cpu_dai;
 	int ret;
 
-	printk("DEBUG: soc_probe_dai_link\n");
-	
-	printk("probe %s dai link %d late %d\n",
+	dev_dbg(card->dev, "probe %s dai link %d late %d\n",
 			card->name, num, order);
 
 	/* config components */
@@ -1179,15 +1166,11 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num, int order)
 	rtd->pmdown_time = pmdown_time;
 
 	/* probe the cpu_dai */
-	printk("DEBUG: [cpu_dai] Probe?\n");
 	if (!cpu_dai->probed &&
 			cpu_dai->driver->probe_order == order) {
-		printk("DEBUG: [cpu_dai] Attempting (1/2).\n");
 		if (!try_module_get(cpu_dai->dev->driver->owner))
 			return -ENODEV;
-		printk("DEBUG: [cpu_dai] Attempting (2/2).\n");
 		if (cpu_dai->driver->probe) {
-			printk("DEBUG: [cpu_dai] Yes.\n");
 			ret = cpu_dai->driver->probe(cpu_dai);
 			if (ret < 0) {
 				printk(KERN_ERR "asoc: failed to probe CPU DAI %s\n",
@@ -1202,35 +1185,24 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num, int order)
 	}
 
 	/* probe the CODEC */
-	printk("DEBUG: [codec] Probe?\n");
 	if (!codec->probed &&
 			codec->driver->probe_order == order) {
-		printk("DEBUG: [codec] Yes.\n");
 		ret = soc_probe_codec(card, codec);
-		if (ret < 0) {
-			printk("DEBUG: [codec] Error %i\n", ret);
-			return ret; 
-		}
+		if (ret < 0)
+			return ret;
 	}
 
 	/* probe the platform */
-	printk("DEBUG: [platform] Probe?\n");
 	if (!platform->probed &&
 			platform->driver->probe_order == order) {
-		printk("DEBUG: [platform] Yes.\n");
 		ret = soc_probe_platform(card, platform);
-		if (ret < 0) {
-			printk("DEBUG: [platform] Error %i\n", ret);
+		if (ret < 0)
 			return ret;
-		}
 	}
 
 	/* probe the CODEC DAI */
-	printk("DEBUG: [codec_dai] Probe?\n");
 	if (!codec_dai->probed && codec_dai->driver->probe_order == order) {
-		printk("DEBUG: [codec_dai] Attempting.\n");
 		if (codec_dai->driver->probe) {
-			printk("DEBUG: [codec_dai] Yes.\n");
 			ret = codec_dai->driver->probe(codec_dai);
 			if (ret < 0) {
 				printk(KERN_ERR "asoc: failed to probe CODEC DAI %s\n",
@@ -1245,7 +1217,6 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num, int order)
 	} 
 
 	/* complete DAI probe during last probe */
-	printk("DEBUG: [soc_probe_dai_link] Completing probe\n");
 	if (order != SND_SOC_COMP_ORDER_LAST)
 		return 0;
 
@@ -1258,7 +1229,6 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num, int order)
 		printk(KERN_WARNING "asoc: failed to add pmdown_time sysfs\n");
 
 	/* create the pcm */
-	printk("DEBUG: [soc_probe_dai_link] create the pcm\n");
 	ret = soc_new_pcm(rtd, num);
 	if (ret < 0) {
 		printk(KERN_ERR "asoc: can't create pcm %s\n", dai_link->stream_name);
@@ -1317,8 +1287,6 @@ static int soc_probe_aux_dev(struct snd_soc_card *card, int num)
 	struct snd_soc_aux_dev *aux_dev = &card->aux_dev[num];
 	struct snd_soc_codec *codec;
 	int ret = -ENODEV;
-	
-	printk("DEBUG: soc_probe_aux_dev\n");
 
 	/* find CODEC from registered CODECs*/
 	list_for_each_entry(codec, &codec_list, list) {
@@ -1333,7 +1301,7 @@ static int soc_probe_aux_dev(struct snd_soc_card *card, int num)
 		}
 	}
 	/* codec not found */
-	dev_err(card->dev, "asoc: codec %s not found", aux_dev->codec_name);
+	dev_err(codec->dev, "asoc: codec %s not found", aux_dev->codec_name);
 	goto out;
 
 found:
@@ -1391,8 +1359,6 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	enum snd_soc_compress_type compress_type;
 	struct snd_soc_dai_link *dai_link;
 	int ret, i, order;
-	
-	printk("DEBUG: snd_soc_instantiate_card called\n");
 
 	mutex_lock(&card->mutex);
 
@@ -1402,7 +1368,6 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	}
 
 	/* bind DAIs */
-	printk("DEBUG: [instantiate_card] binding dais\n");
 	for (i = 0; i < card->num_links; i++)
 		soc_bind_dai_link(card, i);
 
@@ -1413,7 +1378,6 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	}
 
 	/* initialize the register cache for each available codec */
-	printk("DEBUG: [instantiate_card] init reg cache\n");
 	list_for_each_entry(codec, &codec_list, list) {
 		if (codec->cache_init)
 			continue;
@@ -1437,7 +1401,6 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	}
 
 	/* card bind complete so register a sound card */
-	printk("DEBUG: [instantiate_card] bind complete, create card\n");
 	ret = snd_card_create(SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
 			card->owner, 0, &card->snd_card);
 	if (ret < 0) {
@@ -1467,14 +1430,10 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 					  card->num_dapm_widgets);
 
 	/* initialise the sound card only once */
-	printk("DEBUG: calling card's probe op?\n");
 	if (card->probe) {
-		printk("DEBUG: [card_probe] Yes.\n");
 		ret = card->probe(card);
 		if (ret < 0)
 			goto card_probe_error;
-	} else {
-	printk("DEBUG: [card_probe] No.\n");
 	}
 
 	/* early DAI link probe */
@@ -1500,20 +1459,16 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	}
 
 	/* We should have a non-codec control add function but we don't */
-	if (card->controls) {
-		printk("DEBUG: [instantiate_card] card has controls, adding\n");
+	if (card->controls)
 		snd_soc_add_controls(list_first_entry(&card->codec_dev_list,
 						      struct snd_soc_codec,
 						      card_list),
 				     card->controls,
 				     card->num_controls);
-	}
 
-	if (card->dapm_routes) {
-		printk("DEBUG: [instantiate_card] card has dapm_routes, adding\n");
+	if (card->dapm_routes)
 		snd_soc_dapm_add_routes(&card->dapm, card->dapm_routes,
 					card->num_dapm_routes);
-	}
 
 	snd_soc_dapm_new_widgets(&card->dapm);
 
@@ -1559,7 +1514,7 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	if (card->late_probe) {
 		ret = card->late_probe(card);
 		if (ret < 0) {
-			dev_err(card->dev, "%s late_probe() failed: %d\n",
+			printk(KERN_ERR "%s late_probe() failed: %d\n",
 				card->name, ret);
 			goto probe_aux_dev_err;
 		}
@@ -1597,16 +1552,13 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	return;
 
 probe_aux_dev_err:
-	printk("DEBUG: [instantiate_card] Error - probe_aux_dev_error\n");
 	for (i = 0; i < card->num_aux_devs; i++)
 		soc_remove_aux_dev(card, i);
 
 probe_dai_err:
-	printk("DEBUG: [instantiate_card] Error - probe_dai_error\n");
 	soc_remove_dai_links(card);
 
 card_probe_error:
-	printk("DEBUG: [instantiate_card] Error - card_probe_error\n");
 	if (card->remove)
 		card->remove(card);
 
@@ -1622,7 +1574,6 @@ card_probe_error:
 static void snd_soc_instantiate_cards(void)
 {
 	struct snd_soc_card *card;
-	printk("DEBUG: snd_soc_instantiate_cards called\n");
 	list_for_each_entry(card, &card_list, list)
 		snd_soc_instantiate_card(card);
 }
@@ -1632,22 +1583,17 @@ static int soc_probe(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	int ret = 0;
-	
-	printk("DEBUG: soc_probe\n");
 
 	/*
 	 * no card, so machine driver should be registering card
 	 * we should not be here in that case so ret error
 	 */
-	if (!card) {
-		printk("DEBUG: [soc_probe] Error - no card selected\n");
+	if (!card)
 		return -EINVAL;
-	}
 
 	/* Bodge while we unpick instantiation */
 	card->dev = &pdev->dev;
 
-	printk("DEBUG: [soc_probe] Registering card %s\n", card->name);
 	ret = snd_soc_register_card(card);
 	if (ret != 0) {
 		dev_err(&pdev->dev, "Failed to register card\n");
@@ -2907,9 +2853,6 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_digital_mute);
 int snd_soc_register_card(struct snd_soc_card *card)
 {
 	int i;
-	
-	printk("DEBUG: snd_soc_register_card called on card %s\n", card->name);
-	printk("DEBUG: snd_soc_register_card has %i links\n", card->num_links);
 
 	if (!card->name || !card->dev)
 		return -EINVAL;
@@ -3067,8 +3010,6 @@ int snd_soc_register_dai(struct device *dev,
 		struct snd_soc_dai_driver *dai_drv)
 {
 	struct snd_soc_dai *dai;
-	
-	printk("DEBUG: snd_soc_register_dai called on %s\n", dev_name(dev));
 
 	dev_dbg(dev, "dai register %s\n", dev_name(dev));
 
@@ -3136,8 +3077,6 @@ int snd_soc_register_dais(struct device *dev,
 {
 	struct snd_soc_dai *dai;
 	int i, ret = 0;
-	
-	printk("DEBUG: snd_soc_register_dais called on %s #%Zu\n", dev_name(dev), count);
 
 	dev_dbg(dev, "dai register %s #%Zu\n", dev_name(dev), count);
 
@@ -3171,8 +3110,6 @@ int snd_soc_register_dais(struct device *dev,
 		mutex_unlock(&client_mutex);
 
 		pr_debug("Registered DAI '%s'\n", dai->name);
-		printk("DEBUG: [snd_soc_register_dais] Registered DAI '%s'\n",
-		       dai->name);
 	}
 
 	mutex_lock(&client_mutex);
@@ -3212,8 +3149,6 @@ int snd_soc_register_platform(struct device *dev,
 		struct snd_soc_platform_driver *platform_drv)
 {
 	struct snd_soc_platform *platform;
-	
-	printk("DEBUG: snd_soc_register_platform called on %s\n", dev_name(dev));
 
 	dev_dbg(dev, "platform register %s\n", dev_name(dev));
 
@@ -3317,8 +3252,6 @@ int snd_soc_register_codec(struct device *dev,
 	size_t reg_size;
 	struct snd_soc_codec *codec;
 	int ret, i;
-	
-	printk("DEBUG: snd_soc_register_codec called on %s\n", dev_name(dev));
 
 	dev_dbg(dev, "codec register %s\n", dev_name(dev));
 
@@ -3529,7 +3462,6 @@ EXPORT_SYMBOL_GPL(snd_soc_of_parse_audio_routing);
 static int __init snd_soc_init(void)
 {
   
-	printk("DEBUG: snd_soc_init\n");
 #ifdef CONFIG_DEBUG_FS
 	snd_soc_debugfs_root = debugfs_create_dir("asoc", NULL);
 	if (IS_ERR(snd_soc_debugfs_root) || !snd_soc_debugfs_root) {

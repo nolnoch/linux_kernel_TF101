@@ -35,6 +35,8 @@ struct tegra_asoc_utils_data {
 	int set_mclk;
 };
 
+extern bool clk_refcnt_positive(struct clk *c);
+
 int tegra_asoc_utils_set_rate(struct tegra_asoc_utils_data *data, int srate,
 			      int mclk);
 int tegra_asoc_utils_init(struct tegra_asoc_utils_data *data,

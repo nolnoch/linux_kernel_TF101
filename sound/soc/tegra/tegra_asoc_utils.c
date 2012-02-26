@@ -62,9 +62,12 @@ int tegra_asoc_utils_set_rate(struct tegra_asoc_utils_data *data, int srate,
 	data->set_baseclock = 0;
 	data->set_mclk = 0;
 
-	clk_disable(data->clk_cdev1);
-	clk_disable(data->clk_pll_a_out0);
-	clk_disable(data->clk_pll_a);
+	if (clk_refcnt_positive(data->clk_cdev1))
+		clk_disable(data->clk_cdev1);
+	if (clk_refcnt_positive(data->clk_pll_a_out0))
+		clk_disable(data->clk_pll_a_out0);
+	if (clk_refcnt_positive(data->clk_pll_a))
+		clk_disable(data->clk_pll_a);
 
 	err = clk_set_rate(data->clk_pll_a, new_baseclock);
 	if (err) {
@@ -109,8 +112,6 @@ int tegra_asoc_utils_init(struct tegra_asoc_utils_data *data,
 			  struct device *dev)
 {
 	int ret;
-	
-	printk("DEBUG: tegra_asoc_utils_init\n");
 
 	data->dev = dev;
 

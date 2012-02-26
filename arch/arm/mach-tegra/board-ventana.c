@@ -382,7 +382,7 @@ static struct wm8903_platform_data wm8903_pdata = {
 };
 
 static struct tegra_wm8903_platform_data ventana_audio_pdata = {
-	.gpio_spkr_en		= WM8903_GP3,
+	.gpio_spkr_en		= WM8903_GPIO_BASE + 2,
 	.gpio_hp_det		= TEGRA_GPIO_HP_DET,
 	.gpio_hp_mute		= -1,
 	.gpio_int_mic_en	= TEGRA_GPIO_INT_MIC_EN,

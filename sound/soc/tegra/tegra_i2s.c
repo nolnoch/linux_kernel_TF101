@@ -298,7 +298,6 @@ static int tegra_i2s_probe(struct snd_soc_dai *dai)
 {
 	struct tegra_i2s * i2s = snd_soc_dai_get_drvdata(dai);
 
-	printk("DEBUG: tegra_i2s_probe\n");
 	dai->capture_dma_data = &i2s->capture_dma_data;
 	dai->playback_dma_data = &i2s->playback_dma_data;
 
@@ -336,8 +335,6 @@ static __devinit int tegra_i2s_platform_probe(struct platform_device *pdev)
 	u32 of_dma[2];
 	u32 dma_ch;
 	int ret;
-	
-	printk("DEBUG: tegra_i2s_platform_probe\n");
 
 	i2s = devm_kzalloc(&pdev->dev, sizeof(struct tegra_i2s), GFP_KERNEL);
 	if (!i2s) {
@@ -453,7 +450,6 @@ static struct platform_driver tegra_i2s_driver = {
 static int __init i2s_init(void)
 {
 	int ret = 0;
-	printk("DEBUG: [tegra] i2s_init\n");
 
 	ret = platform_driver_register(&tegra_i2s_driver);
 

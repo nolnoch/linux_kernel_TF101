@@ -303,6 +303,12 @@ void clk_disable(struct clk *c)
 }
 EXPORT_SYMBOL(clk_disable);
 
+bool clk_refcnt_positive(struct clk *c)
+{
+	return c->refcnt > 0;
+}
+EXPORT_SYMBOL(clk_refcnt_positive);
+
 int clk_set_parent(struct clk *c, struct clk *parent)
 {
 	int ret = 0;
