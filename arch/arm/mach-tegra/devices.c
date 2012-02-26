@@ -873,3 +873,4 @@ struct platform_device tegra_aes_device = {
 		.coherent_dma_mask = DMA_BIT_MASK(32),
 	},
 };
+

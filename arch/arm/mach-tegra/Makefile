@@ -17,11 +17,11 @@ obj-y                                   += kfuse.o
 ifeq ($(CONFIG_TEGRA_ALSA),y)
 obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra2_i2s.o
 else
-obj-y                                   += tegra_i2s_audio.o
-obj-y                                   += tegra_spdif_audio.o
+obj-n                                   += tegra_i2s_audio.o
+obj-n                                   += tegra_spdif_audio.o
 endif
 obj-y                                   += spdif.o
-obj-y                                   += tegra_das.o
+obj-n                                   += tegra_das.o
 obj-y                                   += mc.o
 obj-$(CONFIG_USB_SUPPORT)               += usb_phy.o
 obj-$(CONFIG_FIQ)                       += fiq.o
@@ -65,7 +65,7 @@ obj-${CONFIG_MACH_VENTANA}              += board-ventana-pinmux.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-sdhci.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-power.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-panel.o
-obj-${CONFIG_MACH_VENTANA}              += board-ventana-jack.o
+#obj-${CONFIG_MACH_VENTANA}              += board-ventana-jack.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-sensors.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-kbc.o
 obj-${CONFIG_MACH_VENTANA}              += board-ventana-memory.o

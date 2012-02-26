@@ -26,6 +26,7 @@
 #include <linux/wakelock.h>
 #include <linux/switch.h>
 #include <linux/workqueue.h>
+#include <linux/mutex.h>
 
 #include <mach/clk.h>
 #include <mach/dc.h>
@@ -1439,7 +1440,7 @@ static void tegra_dc_dsi_destroy(struct tegra_dc *dc)
 
 	mutex_unlock(&dsi->lock);
 
-	mutex_destroy(dsi->lock);
+	mutex_destroy(&dsi->lock);
 	kfree(dsi);
 }
 

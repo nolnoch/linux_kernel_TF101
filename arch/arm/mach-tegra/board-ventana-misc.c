@@ -169,7 +169,6 @@ extern struct platform_device tegra_uartd_device;
 extern struct platform_device debug_uart;
 extern int console_none_on_cmdline;
 static int first_attempt = 1;
-extern unsigned int g_NvBootArgsGPSPreemption;
 
 /*
  * Export a interface to user space for GPS function/debug console switch.
@@ -205,10 +204,6 @@ static ssize_t ventana_debug_store(struct kobject *kobj,
 	}
 	else if ((!strncmp(buf, "OFF", strlen("OFF"))) && first_attempt) {
 		first_attempt = 0;
-		if (!g_NvBootArgsGPSPreemption) {
-			pr_info("[MISC]: Forbid GPS preemption\n");
-			return ret;
-		}
 		pr_info("[MISC]: Disable debug console\n");
 		serial8250_console_unregister();
 		platform_device_del(&debug_uart);

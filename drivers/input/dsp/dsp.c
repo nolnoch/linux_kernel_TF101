@@ -54,8 +54,6 @@ static int fm34_remove(struct i2c_client *client);
 static int fm34_suspend(struct i2c_client *client, pm_message_t mesg);
 static int fm34_resume(struct i2c_client *client);
 static void fm34_reconfig(void) ;
-extern int hs_micbias_power(int on);
-extern bool jack_alive;
 
 static const struct i2c_device_id fm34_id[] = {
 	{DEVICE_NAME, 0},
@@ -241,27 +239,15 @@ long fm34_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				case START_RECORDING:
 					gpio_set_value(TEGRA_GPIO_PH3, 1);
 					msleep(10);
-					if(jack_alive){/*Headset mode*/
-						if(PID==101){
-							FM34_INFO("Start recording(AMIC), bypass DSP\n");
-							ret = i2c_master_send(dsp_chip->client, (u8 *)bypass_parameter, sizeof(bypass_parameter));
-							msleep(5);
-							gpio_set_value(TEGRA_GPIO_PH3, 0);
-						}else if(PID==102){
-							FM34_INFO("Start recording(AMIC, SL101), enable DSP\n");
-							ret = i2c_master_send(dsp_chip->client, (u8 *)enable_parameter_SL101_headset, sizeof(enable_parameter_SL101_headset));
-						}
-					}else{/*Handsfree mode*/
-						if(PID==101){
-							FM34_INFO("Start recording(DMIC), enable DSP\n");
-							ret = i2c_master_send(dsp_chip->client, (u8 *)enable_parameter, sizeof(enable_parameter));
-						}else if(PID==102){
-							FM34_INFO("Start recording(DMIC, SL101), enable DSP\n");
-							ret = i2c_master_send(dsp_chip->client, (u8 *)enable_parameter_SL101_default, sizeof(enable_parameter_SL101_default));
-						}
+					/*Handsfree mode*/
+					if(PID==101){
+						FM34_INFO("Start recording(DMIC), enable DSP\n");
+						ret = i2c_master_send(dsp_chip->client, (u8 *)enable_parameter, sizeof(enable_parameter));
+					}else if(PID==102){
+						FM34_INFO("Start recording(DMIC, SL101), enable DSP\n");
+						ret = i2c_master_send(dsp_chip->client, (u8 *)enable_parameter_SL101_default, sizeof(enable_parameter_SL101_default));
 					}
 					recording_enabled = START_RECORDING;
-					hs_micbias_power(1);
 					break;
 
 				case END_RECORDING:
@@ -270,7 +256,6 @@ long fm34_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 					msleep(10);
 					ret = i2c_master_send(dsp_chip->client, (u8 *)bypass_parameter, sizeof(bypass_parameter));
 					recording_enabled = END_RECORDING;
-					hs_micbias_power(0);
 					msleep(5);
 					gpio_set_value(TEGRA_GPIO_PH3, 0);
 					break;

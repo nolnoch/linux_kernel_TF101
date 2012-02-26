@@ -16,6 +16,7 @@
  ***************************************************************************/
 
 #include <linux/io.h>
+#include <linux/module.h>
 
 #include <sound/core.h>
 #include <sound/control.h>

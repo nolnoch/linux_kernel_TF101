@@ -190,6 +190,10 @@ extern struct device_node *of_find_node_with_property(
 extern struct property *of_find_property(const struct device_node *np,
 					 const char *name,
 					 int *lenp);
+extern int of_property_read_u32_array(const struct device_node *np,
+					  const char *propname,
+					  u32 *out_values,
+					  size_t sz);
 extern int of_device_is_compatible(const struct device_node *device,
 				   const char *);
 extern int of_device_is_available(const struct device_node *device);
@@ -209,7 +213,11 @@ extern int of_parse_phandles_with_args(struct device_node *np,
 	struct device_node **out_node, const void **out_args);
 
 extern int of_machine_is_compatible(const char *compat);
-
+extern int of_property_read_string_index(struct device_node *np,
+					const char *propname,
+					int index, const char **output);
+extern int of_property_count_strings(struct device_node *np,
+					const char *propname);
 extern int prom_add_property(struct device_node* np, struct property* prop);
 extern int prom_remove_property(struct device_node *np, struct property *prop);
 extern int prom_update_property(struct device_node *np,
@@ -223,4 +231,12 @@ extern void of_detach_node(struct device_node *);
 #endif
 
 #endif /* CONFIG_OF */
+
+static inline int of_property_read_u32(const struct device_node *np,
+                                       const char *propname,
+                                       u32 *out_value)
+{
+        return of_property_read_u32_array(np, propname, out_value, 1);
+}
+
 #endif /* _LINUX_OF_H */

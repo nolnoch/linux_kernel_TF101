@@ -64,10 +64,12 @@
 #include <mach/usb_phy.h>
 #include <mach/tegra_das.h>
 #include <mach/board-ventana-misc.h>
+#include <mach/tegra_wm8903_pdata.h>
 
 #include "board.h"
 #include "clock.h"
 #include "board-ventana.h"
+#include "board-harmony.h"
 #include "devices.h"
 #include "gpio-names.h"
 #include "fuse.h"
@@ -370,12 +372,28 @@ static struct wm8903_platform_data wm8903_pdata = {
 	.micdet_delay = 0,
 	.gpio_base = WM8903_GPIO_BASE,
 	.gpio_cfg = {
-		WM8903_GPIO_NO_CONFIG,
-		WM8903_GPIO_NO_CONFIG,
+		WM8903_GPIO_CONFIG_ZERO,
+		WM8903_GPIO_CONFIG_ZERO,
 		0,                     /* as output pin */
-		WM8903_GPn_FN_GPIO_MICBIAS_CURRENT_DETECT
+		WM8903_GPn_FN_MICBIAS_CURRENT_DETECT
 		<< WM8903_GP4_FN_SHIFT, /* as micbias current detect */
-		WM8903_GPIO_NO_CONFIG,
+		WM8903_GPIO_CONFIG_ZERO,
+	},
+};
+
+static struct tegra_wm8903_platform_data ventana_audio_pdata = {
+	.gpio_spkr_en		= WM8903_GP3,
+	.gpio_hp_det		= TEGRA_GPIO_HP_DET,
+	.gpio_hp_mute		= -1,
+	.gpio_int_mic_en	= TEGRA_GPIO_INT_MIC_EN,
+	.gpio_ext_mic_en	= TEGRA_GPIO_EXT_MIC_EN,
+};
+
+static struct platform_device ventana_audio_device = {
+	.name	= "tegra-snd-wm8903",
+	.id	= -1,
+	.dev	= {
+		.platform_data  = &ventana_audio_pdata,
 	},
 };
 
@@ -659,6 +677,7 @@ static struct platform_device *ventana_devices[] __initdata = {
 	&tegra_avp_device,
 	&tegra_camera,
 	&tegra_das_device,
+	&ventana_audio_device,
 };
 
 
@@ -1132,7 +1151,7 @@ ventana_touch_init();
 	ventana_dsp_init();
 #endif
 
-	ventana_wired_jack_init();
+//	ventana_wired_jack_init();
 	ventana_usb_init();
 	ventana_gps_init();
 	ventana_panel_init();

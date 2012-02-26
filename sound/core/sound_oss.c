@@ -26,6 +26,7 @@
 #endif
 
 #include <linux/init.h>
+#include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/time.h>
 #include <sound/core.h>

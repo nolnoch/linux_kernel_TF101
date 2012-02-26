@@ -82,6 +82,157 @@ typedef	void (*irq_flow_handler_t)(unsigned int irq,
 
 struct proc_dir_entry;
 struct msi_desc;
+struct irq_domain;
+
+/**
+ * struct irq_data - per irq and irq chip data passed down to chip functions
+ * @irq:                interrupt number
+ * @hwirq:              hardware interrupt number, local to the interrupt domain
+ * @node:               node index useful for balancing
+ * @state_use_accessors: status information for irq chip functions.
+ *                      Use accessor functions to deal with it
+ * @chip:               low level interrupt hardware access
+ * @domain:             Interrupt translation domain; responsible for mapping
+ *                      between hwirq number and linux irq number.
+ * @handler_data:       per-IRQ data for the irq_chip methods
+ * @chip_data:          platform-specific per-chip private data for the chip
+ *                      methods, to allow shared chip implementations
+ * @msi_desc:           MSI descriptor
+ * @affinity:           IRQ affinity on SMP
+ *
+ * The fields here need to overlay the ones in irq_desc until we
+ * cleaned up the direct references and switched everything over to
+ * irq_data.
+ */
+struct irq_data {
+        unsigned int            irq;
+        unsigned long           hwirq;
+        unsigned int            node;
+        unsigned int            state_use_accessors;
+        struct irq_chip         *chip;
+        struct irq_domain       *domain;
+        void                    *handler_data;
+        void                    *chip_data;
+        struct msi_desc         *msi_desc;
+#ifdef CONFIG_SMP
+        cpumask_var_t           affinity;
+#endif
+};
+
+/*
+ * Bit masks for irq_data.state
+ *
+ * IRQD_TRIGGER_MASK            - Mask for the trigger type bits
+ * IRQD_SETAFFINITY_PENDING     - Affinity setting is pending
+ * IRQD_NO_BALANCING            - Balancing disabled for this IRQ
+ * IRQD_PER_CPU                 - Interrupt is per cpu
+ * IRQD_AFFINITY_SET            - Interrupt affinity was set
+ * IRQD_LEVEL                   - Interrupt is level triggered
+ * IRQD_WAKEUP_STATE            - Interrupt is configured for wakeup
+ *                                from suspend
+ * IRDQ_MOVE_PCNTXT             - Interrupt can be moved in process
+ *                                context
+ * IRQD_IRQ_DISABLED            - Disabled state of the interrupt
+ * IRQD_IRQ_MASKED              - Masked state of the interrupt
+ * IRQD_IRQ_INPROGRESS          - In progress state of the interrupt
+ */
+enum {
+        IRQD_TRIGGER_MASK               = 0xf,
+        IRQD_SETAFFINITY_PENDING        = (1 <<  8),
+        IRQD_NO_BALANCING               = (1 << 10),
+        IRQD_PER_CPU                    = (1 << 11),
+        IRQD_AFFINITY_SET               = (1 << 12),
+        IRQD_LEVEL                      = (1 << 13),
+        IRQD_WAKEUP_STATE               = (1 << 14),
+        IRQD_MOVE_PCNTXT                = (1 << 15),
+        IRQD_IRQ_DISABLED               = (1 << 16),
+        IRQD_IRQ_MASKED                 = (1 << 17),
+        IRQD_IRQ_INPROGRESS             = (1 << 18),
+};
+
+static inline bool irqd_is_setaffinity_pending(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_SETAFFINITY_PENDING;
+}
+
+static inline bool irqd_is_per_cpu(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_PER_CPU;
+}
+
+static inline bool irqd_can_balance(struct irq_data *d)
+{
+        return !(d->state_use_accessors & (IRQD_PER_CPU | IRQD_NO_BALANCING));
+}
+
+static inline bool irqd_affinity_was_set(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_AFFINITY_SET;
+}
+
+static inline void irqd_mark_affinity_was_set(struct irq_data *d)
+{
+        d->state_use_accessors |= IRQD_AFFINITY_SET;
+}
+
+static inline u32 irqd_get_trigger_type(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_TRIGGER_MASK;
+}
+
+/*
+ * Must only be called inside irq_chip.irq_set_type() functions.
+ */
+static inline void irqd_set_trigger_type(struct irq_data *d, u32 type)
+{
+        d->state_use_accessors &= ~IRQD_TRIGGER_MASK;
+        d->state_use_accessors |= type & IRQD_TRIGGER_MASK;
+}
+
+static inline bool irqd_is_level_type(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_LEVEL;
+}
+
+static inline bool irqd_is_wakeup_set(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_WAKEUP_STATE;
+}
+
+static inline bool irqd_can_move_in_process_context(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_MOVE_PCNTXT;
+}
+
+static inline bool irqd_irq_disabled(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_IRQ_DISABLED;
+}
+
+static inline bool irqd_irq_masked(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_IRQ_MASKED;
+}
+
+static inline bool irqd_irq_inprogress(struct irq_data *d)
+{
+        return d->state_use_accessors & IRQD_IRQ_INPROGRESS;
+}
+
+/*
+ * Functions for chained handlers which can be enabled/disabled by the
+ * standard disable_irq/enable_irq calls. Must be called with
+ * irq_desc->lock held.
+ */
+static inline void irqd_set_chained_irq_inprogress(struct irq_data *d)
+{
+        d->state_use_accessors |= IRQD_IRQ_INPROGRESS;
+}
+
+static inline void irqd_clr_chained_irq_inprogress(struct irq_data *d)
+{
+        d->state_use_accessors &= ~IRQD_IRQ_INPROGRESS;
+}
 
 /**
  * struct irq_chip - hardware interrupt chip descriptor
