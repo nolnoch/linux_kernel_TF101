@@ -1,0 +1,13 @@
+	ALSA Driver 1.0.25 Integration with Android
+	 Linux Kernel 2.6.36 for Transformer TF101
+
+
+This fork is being used to integrate ALSA drivers 1.0.25 which are based
+on Linux kernel 3.2 and do not have Ventana board support with the Asus
+Eee Pad Transformer TF101 which runs Linux kernel 2.6.36 adapted for
+Android and AudioFlinger on Ventana board.
+
+Feel free to fork this project further and/or contact me with any notes.
+
+Wade Burch
+<dev@nolnoch.net>
