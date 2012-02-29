@@ -200,6 +200,9 @@ static int soc_widget_update_bits(struct snd_soc_dapm_widget *w,
 	int change;
 	unsigned int old, new;
 	int ret;
+	
+	printk("DEBUG: [soc_widget_update_bits] writing %x to register %x\n",
+	       value, reg);
 
 	ret = soc_widget_read(w, reg);
 	if (ret < 0)
@@ -808,6 +811,8 @@ int dapm_reg_event(struct snd_soc_dapm_widget *w,
 		   struct snd_kcontrol *kcontrol, int event)
 {
 	unsigned int val;
+	
+	printk("DEBUG: [dapm_reg_event] calling update_bits\n");
 
 	if (SND_SOC_DAPM_EVENT_ON(event))
 		val = w->on_val;
@@ -1052,6 +1057,7 @@ static void dapm_seq_run_coalesced(struct snd_soc_dapm_context *dapm,
 			"pop test : Applying 0x%x/0x%x to %x in %dms\n",
 			value, mask, reg, card->pop_time);
 		pop_wait(card->pop_time);
+		printk("DEBUG: [dapm_seq_run_coalesced] calling update_bits\n");
 		soc_widget_update_bits(w, reg, mask, value);
 	}
 
@@ -1176,12 +1182,15 @@ static void dapm_widget_update(struct snd_soc_dapm_context *dapm)
 
 	if (w->event &&
 	    (w->event_flags & SND_SOC_DAPM_PRE_REG)) {
+		printk("DEBUG: [dapm_widget_update] before audio path setup\n");
 		ret = w->event(w, update->kcontrol, SND_SOC_DAPM_PRE_REG);
 		if (ret != 0)
 			pr_err("%s DAPM pre-event failed: %d\n",
 			       w->name, ret);
 	}
 
+	printk("DEBUG: [dapm_widget_update] writing %x to register %x\n",
+	       update->val, update->reg);
 	ret = snd_soc_update_bits(w->codec, update->reg, update->mask,
 				  update->val);
 	if (ret < 0)
@@ -1189,6 +1198,7 @@ static void dapm_widget_update(struct snd_soc_dapm_context *dapm)
 
 	if (w->event &&
 	    (w->event_flags & SND_SOC_DAPM_POST_REG)) {
+		printk("DEBUG: [dapm_widget_update] after audio path setup\n");
 		ret = w->event(w, update->kcontrol, SND_SOC_DAPM_POST_REG);
 		if (ret != 0)
 			pr_err("%s DAPM post-event failed: %d\n",
@@ -1329,9 +1339,11 @@ static void dapm_power_one_widget(struct snd_soc_dapm_widget *w,
 
 	switch (w->id) {
 	case snd_soc_dapm_pre:
+		printk("DEBUG: [dapm_power_one_widget] %s UP\n", w->name);
 		dapm_seq_insert(w, down_list, false);
 		break;
 	case snd_soc_dapm_post:
+		printk("DEBUG: [dapm_power_one_widget] %s DOWN\n", w->name);
 		dapm_seq_insert(w, up_list, true);
 		break;
 
@@ -1361,6 +1373,8 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
 	LIST_HEAD(down_list);
 	LIST_HEAD(async_domain);
 	enum snd_soc_bias_level bias;
+	
+	printk("DEBUG: [dapm_power_widgets] called with event %i\n", event);
 
 	trace_snd_soc_dapm_start(card);
 
@@ -1420,6 +1434,7 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
 	 * event type.
 	 */
 	if (!dapm->n_widgets) {
+		printk("DEBUG: [dapm_power_widgets] no widgets found\n");
 		switch (event) {
 		case SND_SOC_DAPM_STREAM_START:
 		case SND_SOC_DAPM_STREAM_RESUME:
@@ -1748,7 +1763,7 @@ static ssize_t dapm_widget_show(struct device *dev,
 		if (w->dapm != &codec->dapm)
 			continue;
 
-		/* only display widgets that burnm power */
+		/* only display widgets that burn power */
 		switch (w->id) {
 		case snd_soc_dapm_hp:
 		case snd_soc_dapm_mic:
@@ -2061,7 +2076,8 @@ int snd_soc_dapm_add_routes(struct snd_soc_dapm_context *dapm,
 
 	for (i = 0; i < num; i++) {
 		ret = snd_soc_dapm_add_route(dapm, route);
-		printk("Adding route %s->%s\n", route->source, route->sink);
+		dev_dbg(dapm->dev, "Adding route %s->%s\n",
+			route->source, route->sink);
 		if (ret < 0) {
 			dev_err(dapm->dev, "Failed to add route %s->%s\n",
 				route->source, route->sink);

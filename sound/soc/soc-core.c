@@ -93,7 +93,7 @@ static int min_bytes_needed(unsigned long val)
 static int format_register_str(struct snd_soc_codec *codec,
 			       unsigned int reg, char *buf, size_t len)
 {
-	int wordsize = min_bytes_needed(codec->driver->reg_cache_size) * 2;
+	int wordsize = min_bytes_needed(codec->driver->cache_size) * 2;
 	int regsize = codec->driver->reg_word_size * 2;
 	int ret;
 	char tmpbuf[len + 1];
@@ -129,22 +129,26 @@ static ssize_t soc_codec_reg_show(struct snd_soc_codec *codec, char *buf,
 {
 	int i, step = 1;
 	int wordsize, regsize;
-	int len;
+	int len, ret;
 	size_t total = 0;
 	loff_t p = 0;
+	
+	printk("DEBUG: [soc_codec_reg_show]\n");
 
-	wordsize = min_bytes_needed(codec->driver->reg_cache_size) * 2;
+	wordsize = min_bytes_needed(codec->driver->cache_size) * 2;
 	regsize = codec->driver->reg_word_size * 2;
 
 	len = wordsize + regsize + 2 + 1;
 
-	if (!codec->driver->reg_cache_size)
+	if (!codec->driver->cache_size) {
+		printk("DEBUG: [reg_show] Error - no cache_size\n");
 		return 0;
+	}
 
 	if (codec->driver->reg_cache_step)
 		step = codec->driver->reg_cache_step;
 
-	for (i = 0; i < codec->driver->reg_cache_size; i += step) {
+	for (i = 0; i < codec->driver->cache_size; i += step) {
 		if (!snd_soc_codec_readable_register(codec, i))
 			continue;
 		if (codec->driver->display_register) {
@@ -215,6 +219,8 @@ static ssize_t codec_reg_read_file(struct file *file, char __user *user_buf,
 	ssize_t ret;
 	struct snd_soc_codec *codec = file->private_data;
 	char *buf;
+	
+	printk("DEBUG: [codec_reg_read_file]\n");
 
 	if (*ppos < 0 || !count)
 		return -EINVAL;
@@ -3287,8 +3293,8 @@ int snd_soc_register_codec(struct device *dev,
 	mutex_init(&codec->mutex);
 
 	/* allocate CODEC register cache */
-	if (codec_drv->reg_cache_size && codec_drv->reg_word_size) {
-		reg_size = codec_drv->reg_cache_size * codec_drv->reg_word_size;
+	if (codec_drv->cache_size && codec_drv->reg_word_size) {
+		reg_size = codec_drv->cache_size * codec_drv->reg_word_size;
 		codec->reg_size = reg_size;
 		/* it is necessary to make a copy of the default register cache
 		 * because in the case of using a compression type that requires

@@ -167,11 +167,18 @@ static int tegra_wm8903_event_int_spk(struct snd_soc_dapm_widget *w,
 	 * doesn't seem to get the Ventana-required GPIO value correct.
 	 * So we set it here:
 	 */
+	
+	printk("DEBUG: tegra_wm8903_event_int_spk called with event %i\n",event);
 
-	if (SND_SOC_DAPM_EVENT_ON(event))
+	if (SND_SOC_DAPM_EVENT_ON(event)) {
+	  printk("DEBUG: [event_int_spk] event ON\n");
 	  snd_soc_write(codec, WM8903_GPIO_CONTROL_3, 0x0033); /*Speaker GPIO Enable*/
-	else if (SND_SOC_DAPM_EVENT_OFF(event))
+	} else if (SND_SOC_DAPM_EVENT_OFF(event)) {
+	  printk("DEBUG: [event_int_spk] event OFF\n");
 	  snd_soc_write(codec, WM8903_GPIO_CONTROL_3, 0x0000); /*Speaker GPIO Disable*/
+	} else {
+	  printk("DEBUG: [event_int_spk] Path/No event\n");
+	}
 
 	return 0;
 }
@@ -407,6 +414,12 @@ static __devinit int tegra_wm8903_driver_probe(struct platform_device *pdev)
 			ret);
 		goto err_fini_utils;
 	}
+	
+	/*
+	 * snd_soc_write(card->codec, WM8903_GPIO_CONTROL_3, 0x0033); /*Speaker GPIO Enable*
+	 * snd_soc_write(card->codec, WM8903_POWER_MANAGEMENT_4, 0x0003); /*Speaker GPIO Enable*
+	 * snd_soc_write(card->codec, WM8903_POWER_MANAGEMENT_5, 0x0003); /*Speaker GPIO Enable*
+	 */
 
 	return 0;
 
