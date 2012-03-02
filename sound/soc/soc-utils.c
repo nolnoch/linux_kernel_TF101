@@ -91,7 +91,6 @@ static struct snd_soc_platform_driver dummy_platform = {
 
 static __devinit int snd_soc_dummy_probe(struct platform_device *pdev)
 {
-	printk("DEBUG: snd_soc_dummy_probe\n");
 	return snd_soc_register_platform(&pdev->dev, &dummy_platform);
 }
 
@@ -116,8 +115,6 @@ static struct platform_device *soc_dummy_dev;
 int __init snd_soc_util_init(void)
 {
 	int ret;
-	
-	printk("DEBUG: snd_soc_util_init\n");
 
 	soc_dummy_dev = platform_device_alloc("snd-soc-dummy", -1);
 	if (!soc_dummy_dev)

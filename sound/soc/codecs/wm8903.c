@@ -1036,7 +1036,7 @@ static const struct snd_soc_dapm_route wm8903_intercon[] = {
 	{ "HPR_DCS", NULL, "CLK_SYS" },
 	{ "LINEOUTL_DCS", NULL, "CLK_SYS" },
 	{ "LINEOUTR_DCS", NULL, "CLK_SYS" },
-
+  
 	{ "Left Input Mux", "IN1L", "IN1L" },
 	{ "Left Input Mux", "IN2L", "IN2L" },
 	{ "Left Input Mux", "IN3L", "IN3L" },
@@ -1193,14 +1193,15 @@ static const struct snd_soc_dapm_route wm8903_intercon[] = {
 static int wm8903_set_bias_level(struct snd_soc_codec *codec,
 				 enum snd_soc_bias_level level)
 {
+	u16 reg, reg2;
+  
 	switch (level) {
 	case SND_SOC_BIAS_ON:
-		break;
-
 	case SND_SOC_BIAS_PREPARE:
 		snd_soc_update_bits(codec, WM8903_VMID_CONTROL_0,
 				    WM8903_VMID_RES_MASK,
 				    WM8903_VMID_RES_50K);
+		snd_soc_write(codec, WM8903_BIAS_CONTROL_0, 0xB);
 		break;
 
 	case SND_SOC_BIAS_STANDBY:
@@ -1259,6 +1260,9 @@ static int wm8903_set_bias_level(struct snd_soc_codec *codec,
 					    WM8903_BIAS_ENA | WM8903_POBCTRL,
 					    WM8903_BIAS_ENA);
 
+			snd_soc_write(codec, WM8903_CLOCK_RATES_2,
+				     WM8903_CLK_SYS_ENA);
+			
 			/* By default no bypass paths are enabled so
 			 * enable Class W support.
 			 */
@@ -1296,6 +1300,10 @@ static int wm8903_set_bias_level(struct snd_soc_codec *codec,
 
 		snd_soc_update_bits(codec, WM8903_BIAS_CONTROL_0,
 				    WM8903_STARTUP_BIAS_ENA, 0);
+		
+		reg = snd_soc_read(codec, WM8903_CLOCK_RATES_2);
+		reg &= ~WM8903_CLK_SYS_ENA;
+		snd_soc_write(codec, WM8903_CLOCK_RATES_2, reg);
 		break;
 	}
 
@@ -1928,10 +1936,11 @@ static void wm8903_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 {
 	struct wm8903_priv *wm8903 = gpio_to_wm8903(chip);
 	struct snd_soc_codec *codec = wm8903->codec;
+	
+	printk("DEBUG: Writing %x to register %x\n",
+	       value, WM8903_GPIO_CONTROL_1 + offset);
 
-	snd_soc_update_bits(codec, WM8903_GPIO_CONTROL_1 + offset,
-			    WM8903_GP1_LVL_MASK,
-			    !!value << WM8903_GP1_LVL_SHIFT);
+	snd_soc_write(codec, WM8903_GPIO_CONTROL_1 + offset, value);
 }
 
 static struct gpio_chip wm8903_template_chip = {
@@ -2248,10 +2257,9 @@ static __devinit int wm8903_i2c_probe(struct i2c_client *i2c,
 	wm8903->irq = i2c->irq;
 
 	/* If no platform data was supplied, create storage for defaults */
-	if (pdata) {
-		printk("DEBUG: [wm8903_modinit] pdata supplied\n");
+	if (pdata)
 		wm8903->pdata = pdata;
-	} else {
+	else {
 		wm8903->pdata = devm_kzalloc(&i2c->dev,
 					sizeof(struct wm8903_platform_data),
 					GFP_KERNEL);
@@ -2261,14 +2269,12 @@ static __devinit int wm8903_i2c_probe(struct i2c_client *i2c,
 		}
 
 		if (i2c->irq) {
-			printk("DEBUG: [wm8903_modinit] pdata set by irq trigger\n");
 			ret = wm8903_set_pdata_irq_trigger(i2c, wm8903->pdata);
 			if (ret != 0)
 				return ret;
 		}
 
 		if (i2c->dev.of_node) {
-			printk("DEBUG: [wm8903_modinit] pdata set from of\n");
 			ret = wm8903_set_pdata_from_of(i2c, wm8903->pdata);
 			if (ret != 0)
 				return ret;
@@ -2344,7 +2350,6 @@ static struct i2c_driver wm8903_i2c_driver = {
 static int __init wm8903_modinit(void)
 {
 	int ret = 0;
-	printk("DEBUG: wm8903_modinit\n");
 	ret = i2c_add_driver(&wm8903_i2c_driver);
 	if (ret != 0) {
 		printk(KERN_ERR "Failed to register wm8903 I2C driver: %d\n",

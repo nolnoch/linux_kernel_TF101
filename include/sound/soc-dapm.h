@@ -466,10 +466,10 @@ struct snd_soc_dapm_widget {
 	struct snd_soc_dapm_context *dapm;
 
 	/* dapm control */
-	short reg;						/* negative reg = no direct dapm */
+	short reg;				/* negative reg = no direct dapm */
 	unsigned char shift;			/* bits to shift */
 	unsigned int saved_value;		/* widget saved value */
-	unsigned int value;				/* widget current value */
+	unsigned int value;			/* widget current value */
 	unsigned int mask;			/* non-shifted mask */
 	unsigned int on_val;			/* on state value */
 	unsigned int off_val;			/* off state value */

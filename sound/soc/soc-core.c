@@ -132,18 +132,14 @@ static ssize_t soc_codec_reg_show(struct snd_soc_codec *codec, char *buf,
 	int len, ret;
 	size_t total = 0;
 	loff_t p = 0;
-	
-	printk("DEBUG: [soc_codec_reg_show]\n");
 
 	wordsize = min_bytes_needed(codec->driver->cache_size) * 2;
 	regsize = codec->driver->reg_word_size * 2;
 
 	len = wordsize + regsize + 2 + 1;
 
-	if (!codec->driver->cache_size) {
-		printk("DEBUG: [reg_show] Error - no cache_size\n");
+	if (!codec->driver->cache_size)
 		return 0;
-	}
 
 	if (codec->driver->reg_cache_step)
 		step = codec->driver->reg_cache_step;
@@ -219,8 +215,6 @@ static ssize_t codec_reg_read_file(struct file *file, char __user *user_buf,
 	ssize_t ret;
 	struct snd_soc_codec *codec = file->private_data;
 	char *buf;
-	
-	printk("DEBUG: [codec_reg_read_file]\n");
 
 	if (*ppos < 0 || !count)
 		return -EINVAL;
@@ -1361,6 +1355,7 @@ static int snd_soc_init_codec_cache(struct snd_soc_codec *codec,
 static void snd_soc_instantiate_card(struct snd_soc_card *card)
 {
 	struct snd_soc_codec *codec;
+	struct snd_soc_codec *gpio_codec;
 	struct snd_soc_codec_conf *codec_conf;
 	enum snd_soc_compress_type compress_type;
 	struct snd_soc_dai_link *dai_link;

@@ -161,24 +161,20 @@ static int tegra_wm8903_event_int_spk(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_dapm_context *dapm = w->dapm;
 	struct snd_soc_card *card = dapm->card;
-	struct snd_soc_codec *codec = snd_soc_card_get_drvdata(card);
+	struct tegra_wm8903 *machine = snd_soc_card_get_drvdata(card);
+	struct tegra_wm8903_platform_data *pdata = &machine->pdata;
 
 	/* DAPM toggles speaker power registers 0x10 and 0x11, but ALSA
 	 * doesn't seem to get the Ventana-required GPIO value correct.
 	 * So we set it here:
 	 */
-	
-	printk("DEBUG: tegra_wm8903_event_int_spk called with event %i\n",event);
 
 	if (SND_SOC_DAPM_EVENT_ON(event)) {
-	  printk("DEBUG: [event_int_spk] event ON\n");
-	  snd_soc_write(codec, WM8903_GPIO_CONTROL_3, 0x0033); /*Speaker GPIO Enable*/
+		gpio_set_value_cansleep(pdata->gpio_spkr_en, 0x0033);
+		//snd_soc_write(dapm->codec, WM8903_GPIO_CONTROL_3, 0x0033); /*Speaker GPIO Enable*/
 	} else if (SND_SOC_DAPM_EVENT_OFF(event)) {
-	  printk("DEBUG: [event_int_spk] event OFF\n");
-	  snd_soc_write(codec, WM8903_GPIO_CONTROL_3, 0x0000); /*Speaker GPIO Disable*/
-	} else {
-	  printk("DEBUG: [event_int_spk] Path/No event\n");
-	}
+		gpio_set_value_cansleep(pdata->gpio_spkr_en, 0x0000);
+		//snd_soc_write(dapm->codec, WM8903_GPIO_CONTROL_3, 0x0000); /*Speaker GPIO Disable*/
 
 	return 0;
 }
@@ -210,17 +206,8 @@ static const struct snd_soc_dapm_widget tegra_wm8903_dapm_widgets[] = {
 static const struct snd_soc_dapm_route ventana_audio_map[] = {
 
 	/* headphone connected to LHPOUT1, RHPOUT1 */
-	{"Headphone", NULL, "HPOUTR"},
-	{"Headphone", NULL, "HPOUTL"},
-
-	/* headset Jack  - in = micin, out = HPOUT*/
-	{"Headset", NULL, "HPOUTR"},
-	{"Headset", NULL, "HPOUTL"},
-	{"IN1L", NULL, "Headset"},
-
-	/* lineout connected to LINEOUTR and LINEOUTL */
-	{"Lineout", NULL, "LINEOUTR"},
-	{"Lineout", NULL, "LINEOUTL"},
+	{"Headphone Jack", NULL, "HPOUTR"},
+	{"Headphone Jack", NULL, "HPOUTL"},
 
 	/* build-in speaker connected to LON/P RON/P */
 	{"Int Spk", NULL, "RON"},
@@ -229,15 +216,8 @@ static const struct snd_soc_dapm_route ventana_audio_map[] = {
 	{"Int Spk", NULL, "LOP"},
 
 	/* internal mic is mono */
-	{"IN1L", NULL, "Int Mic"},
-
-	/* external mic is stereo */
-	{"IN1L", NULL, "Ext Mic"},
-	{"IN1R", NULL, "Ext Mic"},
-
-	/* Line In */
-	{"IN3L", NULL, "Linein"},
-	{"IN3R", NULL, "Linein"},
+	{"Mic Jack", NULL, "MICBIAS"},
+	{"IN1L", NULL, "Mic Jack"},
 };
 
 static const struct snd_soc_dapm_route harmony_audio_map[] = {
@@ -414,12 +394,6 @@ static __devinit int tegra_wm8903_driver_probe(struct platform_device *pdev)
 			ret);
 		goto err_fini_utils;
 	}
-	
-	/*
-	 * snd_soc_write(card->codec, WM8903_GPIO_CONTROL_3, 0x0033); /*Speaker GPIO Enable*
-	 * snd_soc_write(card->codec, WM8903_POWER_MANAGEMENT_4, 0x0003); /*Speaker GPIO Enable*
-	 * snd_soc_write(card->codec, WM8903_POWER_MANAGEMENT_5, 0x0003); /*Speaker GPIO Enable*
-	 */
 
 	return 0;
 
